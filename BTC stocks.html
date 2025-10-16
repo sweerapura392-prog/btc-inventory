@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -135,6 +134,7 @@
       <button onclick="updateTitle()">Update Title</button>
       <br>
       <button class="small-btn" onclick="changePassword()">Change Password</button>
+      <button class="small-btn" onclick="clearSalesHistory()">Clear Sales History</button>
     </div>
 
     <h2>Add Items</h2>
@@ -323,6 +323,16 @@
         items = [];
         saveAll();
         renderItems();
+      }
+    }
+
+    function clearSalesHistory() {
+      if (!isUnlocked) return alert("Unlock edit mode to clear sales history.");
+      if (confirm("Are you sure you want to delete all sales history?")) {
+        totalSold = { qty: 0, money: 0 };
+        saveAll();
+        updateStats();
+        alert("Sales history cleared!");
       }
     }
 
