@@ -1,158 +1,378 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Inventory Manager</title>
+  <title>Inventory Manager</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-    h1 { text-align: center; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background: #eee; }
-    input[type="text"], input[type="number"] { padding: 5px; width: 100%; box-sizing: border-box; }
-    button { padding: 8px 12px; margin: 4px; cursor: pointer; }
-    #passwordPrompt { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                      background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
-    #passwordPrompt div { background: #fff; padding: 20px; border-radius: 5px; text-align: center; }
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f7ff, #b3e5fc);
+      color: #023047;
+      margin: 0;
+      padding: 0 0 100px 0;
+    }
+
+    header {
+      background-color: #1565c0;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      font-size: 1.8em;
+      font-weight: bold;
+      letter-spacing: 1px;
+      position: relative;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 30px auto;
+      background-color: #f0f8ff;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    h2 {
+      color: #0d47a1;
+      border-bottom: 2px solid #64b5f6;
+      padding-bottom: 5px;
+    }
+
+    button {
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 15px;
+      cursor: pointer;
+      margin: 5px;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #0d47a1;
+    }
+
+    input {
+      margin: 5px;
+      padding: 8px;
+      border: 1px solid #90caf9;
+      border-radius: 5px;
+    }
+
+    .item-list {
+      background-color: #bbdefb;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .item {
+      background-color: #e3f2fd;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 5px 0;
+    }
+
+    .sell-section {
+      background-color: #c5cae9;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+
+    .stats-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #1565c0;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    .highlight {
+      color: #ffeb3b;
+      font-size: 1.2em;
+    }
+
+    #editControls {
+      display: none;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    #lockControls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+
+    .small-btn {
+      background-color: #42a5f5;
+      padding: 6px 10px;
+      font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
-  <h1>Live Inventory Manager</h1>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Item</th>
-        <th>Quantity</th>
-        <th>Price</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="inventoryTable"></tbody>
-  </table>
-
-  <h3>Add New Item</h3>
-  <input type="text" id="newItemName" placeholder="Item Name">
-  <input type="number" id="newItemQty" placeholder="Quantity">
-  <input type="number" id="newItemPrice" placeholder="Price">
-  <button onclick="addItem()">Add Item</button>
-
-  <h3>Total Money Earned: $<span id="totalMoney">0</span></h3>
-  <button onclick="promptPassword()">Clear Sales History</button>
-
-  <!-- Password Prompt -->
-  <div id="passwordPrompt">
-    <div>
-      <p>Enter password to clear sales history:</p>
-      <input type="password" id="passwordInput">
-      <br><br>
-      <button onclick="checkPassword()">Submit</button>
-      <button onclick="closePasswordPrompt()">Cancel</button>
+  <header>
+    <span id="mainTitle">Inventory Manager</span>
+    <div id="lockControls">
+      <button onclick="toggleLock()">🔒 Lock / Unlock</button>
     </div>
+  </header>
+
+  <main>
+    <div id="editControls">
+      <input type="text" id="newTitle" placeholder="Enter new main name">
+      <button onclick="updateTitle()">Update Title</button>
+      <br>
+      <button class="small-btn" onclick="changePassword()">Change Password</button>
+      <button class="small-btn" onclick="clearSalesHistory()">Clear Sales History</button>
+    </div>
+
+    <h2>Add Items</h2>
+    <div id="addItemsSection">
+      <input type="text" id="itemName" placeholder="Item Name">
+      <input type="number" id="itemPrice" placeholder="Price">
+      <input type="number" id="itemQty" placeholder="Quantity">
+      <button onclick="addItem()">Add Item</button>
+      <button id="clearBtn" onclick="clearAll()">Clear All Items</button>
+    </div>
+
+    <h2>Existing Items</h2>
+    <div id="itemList" class="item-list"></div>
+
+    <h2>Sell Items</h2>
+    <div class="sell-section" id="sellSection"></div>
+  </main>
+
+  <div class="stats-bar" id="stats">
+    Total Quantity Sold: <span class="highlight" id="totalQty">0</span> |
+    Total Money Earned: $<span class="highlight" id="totalMoney">0.00</span>
   </div>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
   <script>
-    // ====== FIREBASE CONFIG ======
+    // ===== FIREBASE CONFIG =====
     const firebaseConfig = {
-  apiKey: "AIzaSyDVx0tGc83eDFADyB335sJhFnVVBCYP6KE",
-  authDomain: "livesync-64c2e.firebaseapp.com",
-  projectId: "livesync-64c2e",
-  storageBucket: "livesync-64c2e.firebasestorage.app",
-  messagingSenderId: "781322311897",
-  appId: "1:781322311897:web:4aed3572f846a1d46e46c8"
+  apiKey: "AIzaSyCnALvIiOvFMnA9asL7TTlZDscOC1htQWQ",
+  authDomain: "btclive-edc75.firebaseapp.com",
+  projectId: "btclive-edc75",
+  storageBucket: "btclive-edc75.firebasestorage.app",
+  messagingSenderId: "259522462199",
+  appId: "1:259522462199:web:ddfc1415d5c29b8cc72ef2"
 };
 
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const inventoryRef = db.ref("inventory");
+    const itemsRef = db.ref("items");
     const salesRef = db.ref("sales");
+    const titleRef = db.ref("title");
+    const passwordRef = db.ref("password");
 
-    // ====== LOAD INVENTORY ======
-    inventoryRef.on("value", snapshot => {
-      const table = document.getElementById("inventoryTable");
-      table.innerHTML = "";
-      snapshot.forEach(itemSnap => {
-        const item = itemSnap.val();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${item.name}</td>
-          <td>${item.quantity}</td>
-          <td>$${item.price}</td>
-          <td>
-            <button onclick="sellItem('${itemSnap.key}')">Sell 1</button>
-            <button onclick="deleteItem('${itemSnap.key}')">Delete</button>
-          </td>
-        `;
-        table.appendChild(tr);
-      });
-    });
+    let isUnlocked = false;
 
-    // ====== TOTAL MONEY ======
-    salesRef.on("value", snapshot => {
-      let total = 0;
-      snapshot.forEach(snap => {
-        total += snap.val().amount;
-      });
-      document.getElementById("totalMoney").innerText = total.toFixed(2);
-    });
+    // ===== LOCK/UNLOCK AND PASSWORD =====
+    let localPassword = null;
 
-    // ====== ADD ITEM ======
-    function addItem() {
-      const name = document.getElementById("newItemName").value.trim();
-      const quantity = parseInt(document.getElementById("newItemQty").value);
-      const price = parseFloat(document.getElementById("newItemPrice").value);
-      if (!name || isNaN(quantity) || isNaN(price)) return alert("Please fill all fields correctly.");
-      inventoryRef.push({ name, quantity, price });
-      document.getElementById("newItemName").value = "";
-      document.getElementById("newItemQty").value = "";
-      document.getElementById("newItemPrice").value = "";
-    }
-
-    // ====== SELL ITEM ======
-    function sellItem(key) {
-      const itemRef = inventoryRef.child(key);
-      itemRef.once("value").then(snap => {
-        const item = snap.val();
-        if (item.quantity <= 0) return alert("Item out of stock!");
-        itemRef.update({ quantity: item.quantity - 1 });
-        salesRef.push({ name: item.name, amount: item.price, timestamp: Date.now() });
-      });
-    }
-
-    // ====== DELETE ITEM ======
-    function deleteItem(key) {
-      if (confirm("Are you sure you want to delete this item?")) {
-        inventoryRef.child(key).remove();
-      }
-    }
-
-    // ====== PASSWORD PROTECTED CLEAR SALES ======
-    function promptPassword() {
-      document.getElementById("passwordPrompt").style.display = "flex";
-    }
-
-    function closePasswordPrompt() {
-      document.getElementById("passwordPrompt").style.display = "none";
-      document.getElementById("passwordInput").value = "";
-    }
-
-    function checkPassword() {
-      const input = document.getElementById("passwordInput").value;
-      if (input === "2025") {
-        if (confirm("Are you sure you want to clear all sales history?")) {
-          salesRef.remove();
+    function toggleLock() {
+      passwordRef.once("value").then(snap => {
+        const pw = snap.val();
+        if (!pw) {
+          const newPass = prompt("Set a new password for editing:");
+          if (!newPass) return alert("Password not set.");
+          passwordRef.set(newPass);
+          isUnlocked = true;
+          alert("Password created and edit mode unlocked.");
+        } else {
+          if (isUnlocked) {
+            isUnlocked = false;
+            alert("Locked editing mode.");
+          } else {
+            const entered = prompt("Enter password to unlock:");
+            if (entered === pw) {
+              isUnlocked = true;
+              alert("Unlocked edit mode.");
+            } else {
+              alert("Incorrect password.");
+              return;
+            }
+          }
         }
-        closePasswordPrompt();
-      } else {
-        alert("Incorrect password!");
+        updateLockState();
+      });
+    }
+
+    function changePassword() {
+      if (!isUnlocked) return alert("Unlock edit mode first.");
+      passwordRef.once("value").then(snap => {
+        const oldPass = prompt("Enter your current password:");
+        if (oldPass !== snap.val()) return alert("Incorrect password!");
+        const newPass = prompt("Enter new password:");
+        if (!newPass) return alert("Password not changed.");
+        passwordRef.set(newPass);
+        alert("Password updated successfully!");
+      });
+    }
+
+    function updateLockState() {
+      document.getElementById('editControls').style.display = isUnlocked ? 'block' : 'none';
+      document.getElementById('clearBtn').disabled = !isUnlocked;
+      document.getElementById('itemName').disabled = !isUnlocked;
+      document.getElementById('itemPrice').disabled = !isUnlocked;
+      document.getElementById('itemQty').disabled = !isUnlocked;
+    }
+
+    // ===== TITLE =====
+    titleRef.on("value", snap => {
+      const val = snap.val() || "Inventory Manager";
+      document.getElementById('mainTitle').textContent = val;
+    });
+
+    function updateTitle() {
+      if (!isUnlocked) return alert("Unlock edit mode first.");
+      const newTitle = document.getElementById('newTitle').value.trim();
+      if (!newTitle) return alert("Enter a valid title.");
+      titleRef.set(newTitle);
+      document.getElementById('newTitle').value = '';
+    }
+
+    // ===== ITEMS =====
+    itemsRef.on("value", snapshot => {
+      const items = snapshot.val() || {};
+      renderItems(items);
+    });
+
+    function addItem() {
+      if (!isUnlocked) return alert("Unlock edit mode first.");
+      const name = document.getElementById('itemName').value.trim();
+      const price = parseFloat(document.getElementById('itemPrice').value);
+      const qty = parseInt(document.getElementById('itemQty').value);
+      if (!name || isNaN(price) || isNaN(qty) || price <= 0 || qty <= 0) return alert("Enter valid details.");
+
+      itemsRef.once("value").then(snapshot => {
+        const allItems = snapshot.val() || {};
+        let foundKey = null;
+        for (const key in allItems) {
+          if (allItems[key].name.toLowerCase() === name.toLowerCase()) foundKey = key;
+        }
+
+        if (foundKey) {
+          const updatedQty = allItems[foundKey].qty + qty;
+          itemsRef.child(foundKey).update({ qty: updatedQty, price });
+        } else {
+          itemsRef.push({ name, price, qty });
+        }
+      });
+
+      document.getElementById('itemName').value = '';
+      document.getElementById('itemPrice').value = '';
+      document.getElementById('itemQty').value = '';
+    }
+
+    function renderItems(items) {
+      const list = document.getElementById('itemList');
+      const sell = document.getElementById('sellSection');
+      list.innerHTML = '';
+      sell.innerHTML = '';
+
+      if (Object.keys(items).length === 0) {
+        list.innerHTML = "<p>No items added yet.</p>";
+        sell.innerHTML = "<p>No items available to sell.</p>";
+        updateStats(0,0);
+        return;
+      }
+
+      Object.keys(items).forEach((key, index) => {
+        const item = items[key];
+        list.innerHTML += `
+          <div class="item">
+            <strong>${item.name}</strong><br>
+            Price: $${item.price.toFixed(2)} | Quantity: ${item.qty}
+          </div>
+        `;
+
+        sell.innerHTML += `
+          <div class="item">
+            <strong>${item.name}</strong> - $${item.price.toFixed(2)} (Qty: ${item.qty})<br>
+            <input type="number" id="sellQty${key}" placeholder="Quantity to sell" min="1" max="${item.qty}">
+            <button onclick="sellItem('${key}')">Sell</button>
+          </div>
+        `;
+      });
+
+      // Update stats
+      salesRef.once("value").then(snap => {
+        const sales = snap.val() || {};
+        let totalQty = 0, totalMoney = 0;
+        for (const k in sales) {
+          totalQty += sales[k].qty;
+          totalMoney += sales[k].money;
+        }
+        updateStats(totalQty, totalMoney);
+      });
+    }
+
+    // ===== SELL ITEMS =====
+    function sellItem(key) {
+      const qtyInput = document.getElementById('sellQty' + key);
+      const sellQty = parseInt(qtyInput.value);
+      if (isNaN(sellQty) || sellQty <= 0) return alert("Enter a valid quantity.");
+
+      itemsRef.child(key).once("value").then(snap => {
+        const item = snap.val();
+        if (!item || sellQty > item.qty) return alert("Not enough stock!");
+        const remaining = item.qty - sellQty;
+        if (remaining === 0) itemsRef.child(key).remove();
+        else itemsRef.child(key).update({ qty: remaining });
+
+        salesRef.push({ qty: sellQty, money: sellQty * item.price, timestamp: Date.now() });
+      });
+    }
+
+    // ===== SALES STATS =====
+    salesRef.on("value", snap => {
+      const sales = snap.val() || {};
+      let totalQty = 0, totalMoney = 0;
+      for (const k in sales) {
+        totalQty += sales[k].qty;
+        totalMoney += sales[k].money;
+      }
+      updateStats(totalQty, totalMoney);
+    });
+
+    function updateStats(qty, money) {
+      document.getElementById('totalQty').textContent = qty;
+      document.getElementById('totalMoney').textContent = money.toFixed(2);
+    }
+
+    // ===== CLEAR ALL ITEMS =====
+    function clearAll() {
+      if (!isUnlocked) return alert("Unlock edit mode first.");
+      if (confirm("Are you sure you want to delete all items?")) {
+        itemsRef.remove();
       }
     }
+
+    function clearSalesHistory() {
+      if (!isUnlocked) return alert("Unlock edit mode first.");
+      if (confirm("Are you sure you want to clear sales history?")) {
+        salesRef.remove();
+      }
+    }
+
   </script>
 </body>
 </html>
