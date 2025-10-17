@@ -1,8 +1,9 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inventory Manager</title>
+  <title>Inventory Manager (Live Sync)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -49,9 +50,7 @@
       transition: 0.3s;
     }
 
-    button:hover {
-      background-color: #0d47a1;
-    }
+    button:hover { background-color: #0d47a1; }
 
     input {
       margin: 5px;
@@ -95,16 +94,9 @@
       font-size: 1.1em;
     }
 
-    .highlight {
-      color: #ffeb3b;
-      font-size: 1.2em;
-    }
+    .highlight { color: #ffeb3b; font-size: 1.2em; }
 
-    #editControls {
-      display: none;
-      text-align: center;
-      margin-bottom: 15px;
-    }
+    #editControls { display: none; text-align: center; margin-bottom: 15px; }
 
     #lockControls {
       position: absolute;
@@ -158,20 +150,48 @@
     Total Money Earned: $<span class="highlight" id="totalMoney">0.00</span>
   </div>
 
-  <script>
-    let items = JSON.parse(localStorage.getItem('btcItems')) || [];
-    let totalSold = JSON.parse(localStorage.getItem('totalSold')) || { qty: 0, money: 0 };
-    let title = localStorage.getItem('mainTitle') || "Inventory Manager";
-    let password = localStorage.getItem('editPassword') || null;
+  <!-- Firebase Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+    // 🔥 Your Firebase config here
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      databaseURL: "YOUR_DB_URL",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let items = [];
+    let totalSold = { qty: 0, money: 0 };
+    let title = "Inventory Manager";
+    let password = null;
     let isUnlocked = false;
 
-    document.getElementById('mainTitle').textContent = title;
+    const dbRef = ref(db, 'inventoryData');
+
+    // Sync live updates
+    onValue(dbRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        items = data.items || [];
+        totalSold = data.totalSold || { qty: 0, money: 0 };
+        title = data.title || "Inventory Manager";
+        password = data.password || null;
+        document.getElementById('mainTitle').textContent = title;
+        renderItems();
+      }
+    });
 
     function saveAll() {
-      localStorage.setItem('btcItems', JSON.stringify(items));
-      localStorage.setItem('totalSold', JSON.stringify(totalSold));
-      localStorage.setItem('mainTitle', title);
-      if (password) localStorage.setItem('editPassword', password);
+      update(dbRef, { items, totalSold, title, password });
     }
 
     function toggleLock() {
@@ -202,10 +222,7 @@
 
     function changePassword() {
       const oldPass = prompt("Enter your current password:");
-      if (oldPass !== password) {
-        alert("Incorrect password!");
-        return;
-      }
+      if (oldPass !== password) return alert("Incorrect password!");
       const newPass = prompt("Enter new password:");
       if (!newPass) return alert("Password not changed.");
       password = newPass;
@@ -237,15 +254,13 @@
       const price = parseFloat(document.getElementById('itemPrice').value);
       const qty = parseInt(document.getElementById('itemQty').value);
 
-      if (!name || isNaN(price) || isNaN(qty) || qty <= 0 || price <= 0) {
-        alert("Please enter valid item details!");
-        return;
-      }
+      if (!name || isNaN(price) || isNaN(qty) || qty <= 0 || price <= 0)
+        return alert("Please enter valid item details!");
 
-      const existingItem = items.find(item => item.name.toLowerCase() === name.toLowerCase());
-      if (existingItem) {
-        existingItem.qty += qty;
-        existingItem.price = price;
+      const existing = items.find(i => i.name.toLowerCase() === name.toLowerCase());
+      if (existing) {
+        existing.qty += qty;
+        existing.price = price;
       } else {
         items.push({ name, price, qty });
       }
@@ -270,6 +285,7 @@
       if (items.length === 0) {
         list.innerHTML = "<p>No items added yet.</p>";
         sell.innerHTML = "<p>No items available to sell.</p>";
+        updateStats();
         return;
       }
 
@@ -280,7 +296,6 @@
             Price: $${item.price.toFixed(2)} | Quantity: ${item.qty}
           </div>
         `;
-
         sell.innerHTML += `
           <div class="item">
             <strong>${item.name}</strong> - $${item.price.toFixed(2)} (Qty: ${item.qty})<br>
@@ -289,27 +304,17 @@
           </div>
         `;
       });
-
       updateStats();
     }
 
-    function sellItem(index) {
+    window.sellItem = function(index) {
       const sellQty = parseInt(document.getElementById('sellQty' + index).value);
-
-      if (isNaN(sellQty) || sellQty <= 0) {
-        alert("Enter a valid quantity!");
-        return;
-      }
-
-      if (sellQty > items[index].qty) {
-        alert("Not enough stock!");
-        return;
-      }
+      if (isNaN(sellQty) || sellQty <= 0) return alert("Enter a valid quantity!");
+      if (sellQty > items[index].qty) return alert("Not enough stock!");
 
       const saleAmount = sellQty * items[index].price;
       totalSold.qty += sellQty;
       totalSold.money += saleAmount;
-
       items[index].qty -= sellQty;
       if (items[index].qty === 0) items.splice(index, 1);
 
@@ -317,7 +322,7 @@
       renderItems();
     }
 
-    function clearAll() {
+    window.clearAll = function() {
       if (!isUnlocked) return alert("Unlock edit mode to clear all items.");
       if (confirm("Are you sure you want to delete all items?")) {
         items = [];
@@ -326,7 +331,7 @@
       }
     }
 
-    function clearSalesHistory() {
+    window.clearSalesHistory = function() {
       if (!isUnlocked) return alert("Unlock edit mode to clear sales history.");
       if (confirm("Are you sure you want to delete all sales history?")) {
         totalSold = { qty: 0, money: 0 };
@@ -341,9 +346,7 @@
       document.getElementById('totalMoney').textContent = totalSold.money.toFixed(2);
     }
 
-    // Initialize
     updateLockState();
-    renderItems();
   </script>
 </body>
 </html>
